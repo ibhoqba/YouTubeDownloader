@@ -2,7 +2,7 @@
 
 A powerful, feature-rich YouTube downloader with both GUI and CLI interfaces, smart file verification, and robust download resumption capabilities.
 
-![YouTube Downloader](https://img.shields.io/badge/YouTube-Downloader-red?style=for-the-badge&logo=youtube)
+![YouTube Downloader](https://github.com/ibhoqba/YouTubeDownloader/releases/tag/YouTubeDownloader)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python)
 
 ## ✨ Features
@@ -254,5 +254,6 @@ For persistent issues, please open a GitHub issue with:
 - Your operating system and Python version
 
 ---
+
 
 **Happy Downloading!** 🎉
