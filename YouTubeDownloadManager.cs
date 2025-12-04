@@ -1,5 +1,4 @@
-﻿
-namespace YouTubeDownloader
+﻿namespace YouTubeDownloader
 {
     using System;
     using System.Diagnostics;
@@ -7,6 +6,7 @@ namespace YouTubeDownloader
     using System.Text.Json;
     using System.Text.RegularExpressions;
     using System.Threading.Tasks;
+    using System.Collections.Generic;
 
     public class YouTubeDownloadManager
     {
@@ -41,10 +41,8 @@ namespace YouTubeDownloader
 
         private async Task<(string Title, long? FileSize)> GetVideoInfoAsync(string url, string quality)
         {
-            // استخدام yt-dlp -J للحصول على JSON
             var args = $"-J \"{url}\"";
             var json = await RunProcessCaptureAsync(YtDlpPath, args);
-            //
             try
             {
                 using var doc = JsonDocument.Parse(json);
@@ -65,7 +63,7 @@ namespace YouTubeDownloader
             }
         }
 
-        private async Task<string> RunProcessCaptureAsync(string fileName, string arguments)
+        private async Task<string> RunProcessCaptureAsync(string fileName, string arguments, int timeoutSeconds = 120)
         {
             var psi = new ProcessStartInfo
             {
@@ -78,15 +76,55 @@ namespace YouTubeDownloader
             };
 
             using var proc = new Process { StartInfo = psi };
-            proc.Start();
-            var output = await proc.StandardOutput.ReadToEndAsync();
-            var error = await proc.StandardError.ReadToEndAsync();
-            await proc.WaitForExitAsync();
 
-            if (proc.ExitCode != 0 && !string.IsNullOrWhiteSpace(error))
-                throw new Exception(error);
+            Log($"▶ Running: {fileName} {arguments}");
+
+            proc.Start();
+
+            var outputTask = proc.StandardOutput.ReadToEndAsync();
+            var errorTask = proc.StandardError.ReadToEndAsync();
+
+            var waitTask = Task.Run(async () =>
+            {
+                await proc.WaitForExitAsync();
+            });
+
+            var completed = await Task.WhenAny(waitTask, Task.Delay(TimeSpan.FromSeconds(timeoutSeconds)));
+
+            if (completed != waitTask)
+            {
+                try { proc.Kill(entireProcessTree: true); } catch { }
+                throw new TimeoutException($"yt-dlp did not finish within {timeoutSeconds} seconds.");
+            }
+
+            var output = await outputTask;
+            var error = await errorTask;
+
+            if (proc.ExitCode != 0)
+            {
+                if (!string.IsNullOrWhiteSpace(error))
+                    throw new Exception(error);
+                throw new Exception($"yt-dlp exited with code {proc.ExitCode}");
+            }
 
             return output;
+        }
+
+        private string BuildOutputTemplate(bool isPlaylist)
+        {
+            Directory.CreateDirectory(OutputPath);
+
+            if (isPlaylist)
+            {
+                // C:\Downloads\اسم القائمة\001 - عنوان المقطع.ext
+                return Path.Combine(
+                    OutputPath,
+                    "%(playlist_title)s",
+                    "%(playlist_index)03d - %(title)s.%(ext)s"
+                );
+            }
+
+            return Path.Combine(OutputPath, "%(title)s.%(ext)s");
         }
 
         private string BuildFormat(string quality)
@@ -97,7 +135,6 @@ namespace YouTubeDownloader
             if (string.Equals(quality, "best", StringComparison.OrdinalIgnoreCase))
                 return "best";
 
-            // مثل 1080p / 720p
             var digits = Regex.Match(quality, @"\d+").Value;
             if (!string.IsNullOrEmpty(digits))
                 return $"best[height<={digits}]";
@@ -105,22 +142,10 @@ namespace YouTubeDownloader
             return "best[height<=720]";
         }
 
-        private string BuildOutputTemplate(bool isPlaylist)
-        {
-            Directory.CreateDirectory(OutputPath);
-            if (isPlaylist)
-            {
-                // downloads/%(playlist_title)s/%(title)s.%(ext)s
-                return Path.Combine(OutputPath, "%(playlist_title)s", "%(title)s.%(ext)s");
-            }
-            return Path.Combine(OutputPath, "%(title)s.%(ext)s");
-        }
-
         public async Task<(bool Success, string Message)> TestAuthenticationAsync()
         {
             try
             {
-                // مجرد طلب بسيط للصفحة الرئيسية
                 await RunProcessCaptureAsync(YtDlpPath, "--dump-single-json \"https://www.youtube.com\"");
                 return (true, "✅ Authentication / basic access OK");
             }
@@ -138,10 +163,7 @@ namespace YouTubeDownloader
             try
             {
                 Log("🔍 Fetching video information...");
-                //   if (url.Contains("list="))
-                //  https://youtu.be/McifeJjrvpI?si=O_qVDTWf5mfVHwbt
-
-                var (title, size) = await GetVideoInfoAsync(url, quality);
+                var (title, _) = await GetVideoInfoAsync(url, quality);
                 SetCurrentItem($"Downloading: {title}");
                 Log($"🎬 Video: {title}");
                 Log($"📏 Quality: {quality}");
@@ -149,22 +171,13 @@ namespace YouTubeDownloader
                 var format = BuildFormat(quality);
                 var outtmpl = BuildOutputTemplate(isPlaylist: false);
 
-                // خيارات الترجمة
-                //var subsArgs = downloadSubs
-                //    ? "--writesubtitles --writeautomaticsub --sub-langs en --embed-subs"
-                //    : "";
-
-                //var args =
-                //    $"-f \"{format}\" -o \"{outtmpl}\" --no-overwrites --continue --ignore-errors " +
-                //    "--restrict-filenames --retries 10 --fragment-retries 20 --skip-unavailable-fragments " +
-                //    "--socket-timeout 30 {subsArgs} \"{url}\"";
                 var subsArgs = downloadSubs
-                ? "--writesubtitles --writeautomaticsub --sub-langs en --embed-subs"
-                     : "";
+                    ? "--writesubtitles --writeautomaticsub --sub-langs en --embed-subs"
+                    : "";
 
                 var args =
                     $"-f \"{format}\" -o \"{outtmpl}\" --no-overwrites --continue --ignore-errors " +
-                    $"--restrict-filenames --retries 10 --fragment-retries 20 --skip-unavailable-fragments " +
+                    $"--retries 10 --fragment-retries 20 --skip-unavailable-fragments " +
                     $"--socket-timeout 30 {subsArgs} \"{url}\"";
 
                 await RunDownloadWithProgress(url, args, quality);
@@ -193,21 +206,13 @@ namespace YouTubeDownloader
                 var format = BuildFormat(quality);
                 var outtmpl = BuildOutputTemplate(isPlaylist: true);
 
-                //var subsArgs = downloadSubs
-                //    ? "--writesubtitles --writeautomaticsub --sub-langs en --embed-subs"
-                //    : "";
-
-                //var args =
-                //    $"-f \"{format}\" -o \"{outtmpl}\" --yes-playlist --no-overwrites --continue --ignore-errors " +
-                //    "--restrict-filenames --retries 10 --fragment-retries 20 --skip-unavailable-fragments " +
-                //    "--socket-timeout 30 {subsArgs} \"{url}\"";
                 var subsArgs = downloadSubs
-                 ? "--writesubtitles --writeautomaticsub --sub-langs en --embed-subs"
-                 : "";
+                    ? "--writesubtitles --writeautomaticsub --sub-langs en --embed-subs"
+                    : "";
 
                 var args =
                     $"-f \"{format}\" -o \"{outtmpl}\" --yes-playlist --no-overwrites --continue --ignore-errors " +
-                    $"--restrict-filenames --retries 10 --fragment-retries 20 --skip-unavailable-fragments " +
+                    $"--retries 10 --fragment-retries 20 --skip-unavailable-fragments " +
                     $"--socket-timeout 30 {subsArgs} \"{url}\"";
 
                 SetCurrentItem("Downloading playlist...");
@@ -242,49 +247,24 @@ namespace YouTubeDownloader
             };
 
             var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
-
             var tcs = new TaskCompletionSource<bool>();
 
             proc.OutputDataReceived += (s, e) =>
             {
-
                 if (string.IsNullOrWhiteSpace(e.Data))
                     return;
 
                 var line = e.Data;
                 Log(line);
 
-                // مثال سطر: [download]  42.3% of ...
                 if (line.Contains("[download]"))
                 {
-
                     var m = Regex.Match(line, @"(\d+(\.\d+)?)%");
-                    if (m.Success)
+                    if (m.Success && double.TryParse(m.Groups[1].Value, out var perc))
                     {
-                        if (double.TryParse(m.Groups[1].Value, out var perc))
-                        {
-                            DownloadManager.UpdateDownloadState(url, "downloading", perc);
-
-                            // 🔥 نرسل التقدم للواجهة
-                            OnProgress?.Invoke(perc);
-                        }
+                        DownloadManager.UpdateDownloadState(url, "downloading", perc);
+                        OnProgress?.Invoke(perc);
                     }
-
-                    //var m = Regex.Match(line, @"(\d+(\.\d+)?)%");
-                    //if (m.Success)
-                    //{
-                    //    if (double.TryParse(m.Groups[1].Value, out var perc))
-                    //    {
-                    //        DownloadManager.UpdateDownloadState(
-                    //            url,
-                    //            "downloading",
-                    //            perc,
-                    //            expectedSize: 0,
-                    //            downloadedSize: 0,
-                    //            quality: quality
-                    //        );
-                    //    }
-                    //}
                 }
             };
 
@@ -322,7 +302,7 @@ namespace YouTubeDownloader
 
             var failed = DownloadManager.GetFailedDownloads();
             var incomplete = DownloadManager.GetIncompleteDownloads();
-            var all = new System.Collections.Generic.HashSet<string>(failed);
+            var all = new HashSet<string>(failed);
             foreach (var u in incomplete)
                 all.Add(u);
 
@@ -376,6 +356,164 @@ namespace YouTubeDownloader
             }
 
             return resumed;
+        }
+
+        /// <summary>
+        /// Download a single playlist item (one index) - used in per-video loop from the UI.
+        /// </summary>
+        public async Task<string> DownloadPlaylistItemAsync(
+            string playlistUrl,
+            int index,
+            string quality,
+            bool downloadSubs)
+        {
+            Log($"🎬 Downloading playlist item #{index}...");
+            SetCurrentItem($"Downloading playlist item #{index}...");
+
+            var format = BuildFormat(quality);
+            var outtmpl = BuildOutputTemplate(isPlaylist: true);
+
+            var subsArgs = downloadSubs
+                ? "--writesubtitles --writeautomaticsub --sub-langs en --embed-subs"
+                : "";
+
+            var args =
+                $"-f \"{format}\" -o \"{outtmpl}\" --yes-playlist --playlist-items {index} " +
+                "--no-overwrites --continue --ignore-errors " +
+                "--retries 10 --fragment-retries 20 --skip-unavailable-fragments " +
+                $"--socket-timeout 30 {subsArgs} \"{playlistUrl}\"";
+
+            Log($"▶ Download cmd: {YtDlpPath} {args}");
+
+            await RunDownloadWithProgress(playlistUrl, args, quality);
+
+            Log($"✅ Playlist item #{index} downloaded!");
+            SetCurrentItem("Ready");
+            return "downloaded";
+        }
+
+        public async Task<MediaListInfo> GetMediaInfoAsync(string url, string quality)
+        {
+            var json = await RunProcessCaptureAsync(
+                YtDlpPath,
+                $"--flat-playlist -J \"{url}\"",
+                timeoutSeconds: 120);
+
+            var result = new MediaListInfo();
+
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("entries", out var entries) && entries.ValueKind == JsonValueKind.Array)
+            {
+                result.IsPlaylist = true;
+                result.PlaylistTitle = root.TryGetProperty("title", out var pt)
+                    ? pt.GetString() ?? "Playlist"
+                    : "Playlist";
+
+                int index = 0;
+                foreach (var entry in entries.EnumerateArray())
+                {
+                    index++;
+
+                    string id = entry.TryGetProperty("id", out var idProp)
+                        ? idProp.GetString() ?? ""
+                        : "";
+
+                    string title = entry.TryGetProperty("title", out var tProp)
+                        ? tProp.GetString() ?? $"Item {index}"
+                        : $"Item {index}";
+
+                    var item = new MediaItem
+                    {
+                        Id = id,
+                        Title = title,
+                        // رابط مباشر للفيديو
+                        Url = string.IsNullOrEmpty(id)
+                            ? url
+                            : $"https://www.youtube.com/watch?v={id}"
+                    };
+
+                    if (entry.TryGetProperty("duration", out var durProp) &&
+                        durProp.ValueKind == JsonValueKind.Number)
+                    {
+                        var seconds = durProp.GetDouble();
+                        item.Duration = TimeSpan.FromSeconds(seconds);
+                    }
+
+                    if (entry.TryGetProperty("filesize", out var fsProp) &&
+                        fsProp.ValueKind == JsonValueKind.Number)
+                    {
+                        item.FileSize = fsProp.GetInt64();
+                    }
+                    else if (entry.TryGetProperty("filesize_approx", out var fsaProp) &&
+                             fsaProp.ValueKind == JsonValueKind.Number)
+                    {
+                        item.FileSize = fsaProp.GetInt64();
+                    }
+
+                    result.Items.Add(item);
+                }
+            }
+            else
+            {
+                // فيديو منفرد
+                var item = new MediaItem
+                {
+                    Id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() ?? "" : "",
+                    Title = root.TryGetProperty("title", out var tProp) ? tProp.GetString() ?? "Untitled" : "Untitled",
+                    Url = url
+                };
+
+                if (root.TryGetProperty("duration", out var durProp) &&
+                    durProp.ValueKind == JsonValueKind.Number)
+                {
+                    var seconds = durProp.GetDouble();
+                    item.Duration = TimeSpan.FromSeconds(seconds);
+                }
+
+                if (root.TryGetProperty("filesize", out var fsProp) &&
+                    fsProp.ValueKind == JsonValueKind.Number)
+                {
+                    item.FileSize = fsProp.GetInt64();
+                }
+                else if (root.TryGetProperty("filesize_approx", out var fsaProp) &&
+                         fsaProp.ValueKind == JsonValueKind.Number)
+                {
+                    item.FileSize = fsaProp.GetInt64();
+                }
+
+                result.IsPlaylist = false;
+                result.PlaylistTitle = item.Title;
+                result.Items.Add(item);
+            }
+
+            Log(result.IsPlaylist
+                ? $"✅ Playlist info loaded: {result.PlaylistTitle} ({result.Items.Count} items)"
+                : $"✅ Video info loaded: {result.PlaylistTitle}");
+
+            return result;
+        }
+
+        public async Task<long?> GetFileSizeForVideoAsync(string url, string quality)
+        {
+            var format = BuildFormat(quality);
+            var args =
+                $"-f \"{format}\" --skip-download --print \"%(filesize,filesize_approx)d\" \"{url}\"";
+
+            try
+            {
+                Log($"▶ Size cmd: {YtDlpPath} {args}");
+                var output = await RunProcessCaptureAsync(YtDlpPath, args, timeoutSeconds: 60);
+                var line = output.Trim();
+                if (long.TryParse(line, out var size) && size > 0)
+                    return size;
+            }
+            catch (Exception ex)
+            {
+                Log($"⚠️ Error getting file size: {ex.Message}");
+            }
+            return null;
         }
     }
 

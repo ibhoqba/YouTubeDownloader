@@ -48,12 +48,28 @@
             lblLog = new Label();
             btnBrowseOutput = new Button();
             progressBar1 = new ProgressBar();
+            dgvItems = new DataGridView();
+            colTitle = new DataGridViewTextBoxColumn();
+            colSize = new DataGridViewTextBoxColumn();
+            colTime = new DataGridViewTextBoxColumn();
+            colDownload = new DataGridViewCheckBoxColumn();
+            colResume = new DataGridViewCheckBoxColumn();
+            colPause = new DataGridViewButtonColumn();
+            colProgress = new DataGridViewTextBoxColumn();
+            tableLayoutPanel1 = new TableLayoutPanel();
+            groupBox1 = new GroupBox();
+            btnGetAllSizes = new Button();
+            btnGetSelectedSizes = new Button();
+            btnDeselectAll = new Button();
+            ((System.ComponentModel.ISupportInitialize)dgvItems).BeginInit();
+            tableLayoutPanel1.SuspendLayout();
+            groupBox1.SuspendLayout();
             SuspendLayout();
             // 
             // lblUrl
             // 
             lblUrl.AutoSize = true;
-            lblUrl.Location = new Point(12, 15);
+            lblUrl.Location = new Point(6, 14);
             lblUrl.Name = "lblUrl";
             lblUrl.Size = new Size(81, 15);
             lblUrl.TabIndex = 0;
@@ -62,15 +78,16 @@
             // txtUrl
             // 
             txtUrl.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            txtUrl.Location = new Point(110, 12);
+            txtUrl.Location = new Point(87, 11);
             txtUrl.Name = "txtUrl";
-            txtUrl.Size = new Size(560, 23);
+            txtUrl.Size = new Size(555, 23);
             txtUrl.TabIndex = 1;
+            txtUrl.TextChanged += txtUrl_TextChanged;
             // 
             // lblOutputPath
             // 
             lblOutputPath.AutoSize = true;
-            lblOutputPath.Location = new Point(12, 47);
+            lblOutputPath.Location = new Point(6, 40);
             lblOutputPath.Name = "lblOutputPath";
             lblOutputPath.Size = new Size(75, 15);
             lblOutputPath.TabIndex = 2;
@@ -79,14 +96,14 @@
             // txtOutputPath
             // 
             txtOutputPath.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            txtOutputPath.Location = new Point(110, 44);
+            txtOutputPath.Location = new Point(79, 40);
             txtOutputPath.Name = "txtOutputPath";
-            txtOutputPath.Size = new Size(480, 23);
+            txtOutputPath.Size = new Size(431, 23);
             txtOutputPath.TabIndex = 3;
             // 
             // btnDownloadVideo
             // 
-            btnDownloadVideo.Location = new Point(110, 116);
+            btnDownloadVideo.Location = new Point(107, 95);
             btnDownloadVideo.Name = "btnDownloadVideo";
             btnDownloadVideo.Size = new Size(140, 30);
             btnDownloadVideo.TabIndex = 8;
@@ -96,9 +113,9 @@
             // 
             // btnDownloadPlaylist
             // 
-            btnDownloadPlaylist.Location = new Point(260, 116);
+            btnDownloadPlaylist.Location = new Point(253, 95);
             btnDownloadPlaylist.Name = "btnDownloadPlaylist";
-            btnDownloadPlaylist.Size = new Size(150, 30);
+            btnDownloadPlaylist.Size = new Size(118, 30);
             btnDownloadPlaylist.TabIndex = 9;
             btnDownloadPlaylist.Text = "Download Playlist";
             btnDownloadPlaylist.UseVisualStyleBackColor = true;
@@ -106,9 +123,9 @@
             // 
             // btnResumeFailed
             // 
-            btnResumeFailed.Location = new Point(420, 116);
+            btnResumeFailed.Location = new Point(577, 94);
             btnResumeFailed.Name = "btnResumeFailed";
-            btnResumeFailed.Size = new Size(160, 30);
+            btnResumeFailed.Size = new Size(92, 30);
             btnResumeFailed.TabIndex = 10;
             btnResumeFailed.Text = "Resume Failed Downloads";
             btnResumeFailed.UseVisualStyleBackColor = true;
@@ -117,7 +134,7 @@
             // lblQuality
             // 
             lblQuality.AutoSize = true;
-            lblQuality.Location = new Point(12, 82);
+            lblQuality.Location = new Point(19, 81);
             lblQuality.Name = "lblQuality";
             lblQuality.Size = new Size(48, 15);
             lblQuality.TabIndex = 5;
@@ -127,7 +144,7 @@
             // 
             comboQuality.DropDownStyle = ComboBoxStyle.DropDownList;
             comboQuality.FormattingEnabled = true;
-            comboQuality.Location = new Point(110, 79);
+            comboQuality.Location = new Point(73, 73);
             comboQuality.Name = "comboQuality";
             comboQuality.Size = new Size(121, 23);
             comboQuality.TabIndex = 6;
@@ -135,7 +152,7 @@
             // chkSubtitles
             // 
             chkSubtitles.AutoSize = true;
-            chkSubtitles.Location = new Point(250, 81);
+            chkSubtitles.Location = new Point(200, 69);
             chkSubtitles.Name = "chkSubtitles";
             chkSubtitles.Size = new Size(127, 19);
             chkSubtitles.TabIndex = 7;
@@ -145,7 +162,7 @@
             // lblCurrentCaption
             // 
             lblCurrentCaption.AutoSize = true;
-            lblCurrentCaption.Location = new Point(12, 162);
+            lblCurrentCaption.Location = new Point(6, 128);
             lblCurrentCaption.Name = "lblCurrentCaption";
             lblCurrentCaption.Size = new Size(77, 15);
             lblCurrentCaption.TabIndex = 11;
@@ -154,16 +171,16 @@
             // lblCurrent
             // 
             lblCurrent.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            lblCurrent.Location = new Point(110, 162);
+            lblCurrent.Location = new Point(107, 128);
             lblCurrent.Name = "lblCurrent";
-            lblCurrent.Size = new Size(560, 15);
+            lblCurrent.Size = new Size(523, 15);
             lblCurrent.TabIndex = 12;
             lblCurrent.Text = "Ready";
             // 
             // lblAuthCaption
             // 
             lblAuthCaption.AutoSize = true;
-            lblAuthCaption.Location = new Point(12, 185);
+            lblAuthCaption.Location = new Point(-3, 143);
             lblAuthCaption.Name = "lblAuthCaption";
             lblAuthCaption.Size = new Size(70, 15);
             lblAuthCaption.TabIndex = 13;
@@ -172,27 +189,27 @@
             // lblAuthStatus
             // 
             lblAuthStatus.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            lblAuthStatus.Location = new Point(110, 185);
+            lblAuthStatus.Location = new Point(107, 143);
             lblAuthStatus.Name = "lblAuthStatus";
-            lblAuthStatus.Size = new Size(560, 15);
+            lblAuthStatus.Size = new Size(546, 15);
             lblAuthStatus.TabIndex = 14;
             lblAuthStatus.Text = "(not tested)";
             // 
             // txtLog
             // 
-            txtLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            txtLog.Location = new Point(12, 235);
+            txtLog.Dock = DockStyle.Fill;
+            txtLog.Location = new Point(3, 421);
             txtLog.Multiline = true;
             txtLog.Name = "txtLog";
             txtLog.ReadOnly = true;
             txtLog.ScrollBars = ScrollBars.Vertical;
-            txtLog.Size = new Size(658, 230);
+            txtLog.Size = new Size(678, 57);
             txtLog.TabIndex = 16;
             // 
             // lblLog
             // 
             lblLog.AutoSize = true;
-            lblLog.Location = new Point(12, 215);
+            lblLog.Location = new Point(0, 158);
             lblLog.Name = "lblLog";
             lblLog.Size = new Size(70, 15);
             lblLog.TabIndex = 15;
@@ -201,7 +218,7 @@
             // btnBrowseOutput
             // 
             btnBrowseOutput.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnBrowseOutput.Location = new Point(596, 43);
+            btnBrowseOutput.Location = new Point(568, 40);
             btnBrowseOutput.Name = "btnBrowseOutput";
             btnBrowseOutput.Size = new Size(74, 25);
             btnBrowseOutput.TabIndex = 4;
@@ -211,40 +228,147 @@
             // 
             // progressBar1
             // 
-            progressBar1.Location = new Point(237, 203);
+            progressBar1.Location = new Point(125, 162);
             progressBar1.Name = "progressBar1";
-            progressBar1.Size = new Size(100, 23);
+            progressBar1.Size = new Size(401, 23);
             progressBar1.TabIndex = 17;
+            // 
+            // dgvItems
+            // 
+            dgvItems.AllowUserToAddRows = false;
+            dgvItems.AllowUserToDeleteRows = false;
+            dgvItems.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgvItems.Columns.AddRange(new DataGridViewColumn[] { colTitle, colSize, colTime, colDownload, colResume, colPause, colProgress });
+            dgvItems.Dock = DockStyle.Fill;
+            dgvItems.Location = new Point(3, 200);
+            dgvItems.Name = "dgvItems";
+            dgvItems.RowHeadersVisible = false;
+            dgvItems.Size = new Size(678, 215);
+            dgvItems.TabIndex = 18;
+            // 
+            // colTitle
+            // 
+            colTitle.Name = "colTitle";
+            // 
+            // colSize
+            // 
+            colSize.Name = "colSize";
+            // 
+            // colTime
+            // 
+            colTime.Name = "colTime";
+            // 
+            // colDownload
+            // 
+            colDownload.Name = "colDownload";
+            // 
+            // colResume
+            // 
+            colResume.Name = "colResume";
+            // 
+            // colPause
+            // 
+            colPause.Name = "colPause";
+            // 
+            // colProgress
+            // 
+            colProgress.Name = "colProgress";
+            // 
+            // tableLayoutPanel1
+            // 
+            tableLayoutPanel1.ColumnCount = 1;
+            tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            tableLayoutPanel1.Controls.Add(dgvItems, 0, 1);
+            tableLayoutPanel1.Controls.Add(groupBox1, 0, 0);
+            tableLayoutPanel1.Controls.Add(txtLog, 0, 2);
+            tableLayoutPanel1.Dock = DockStyle.Fill;
+            tableLayoutPanel1.Location = new Point(0, 0);
+            tableLayoutPanel1.Name = "tableLayoutPanel1";
+            tableLayoutPanel1.RowCount = 3;
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 47.1291847F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 52.8708153F));
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 62F));
+            tableLayoutPanel1.Size = new Size(684, 481);
+            tableLayoutPanel1.TabIndex = 19;
+            // 
+            // groupBox1
+            // 
+            groupBox1.Controls.Add(btnGetAllSizes);
+            groupBox1.Controls.Add(btnGetSelectedSizes);
+            groupBox1.Controls.Add(btnDeselectAll);
+            groupBox1.Controls.Add(txtUrl);
+            groupBox1.Controls.Add(lblLog);
+            groupBox1.Controls.Add(progressBar1);
+            groupBox1.Controls.Add(lblAuthCaption);
+            groupBox1.Controls.Add(lblAuthStatus);
+            groupBox1.Controls.Add(lblCurrentCaption);
+            groupBox1.Controls.Add(lblUrl);
+            groupBox1.Controls.Add(lblOutputPath);
+            groupBox1.Controls.Add(lblCurrent);
+            groupBox1.Controls.Add(txtOutputPath);
+            groupBox1.Controls.Add(btnBrowseOutput);
+            groupBox1.Controls.Add(btnResumeFailed);
+            groupBox1.Controls.Add(lblQuality);
+            groupBox1.Controls.Add(btnDownloadPlaylist);
+            groupBox1.Controls.Add(comboQuality);
+            groupBox1.Controls.Add(btnDownloadVideo);
+            groupBox1.Controls.Add(chkSubtitles);
+            groupBox1.Dock = DockStyle.Fill;
+            groupBox1.Location = new Point(3, 3);
+            groupBox1.Name = "groupBox1";
+            groupBox1.Size = new Size(678, 191);
+            groupBox1.TabIndex = 0;
+            groupBox1.TabStop = false;
+            // 
+            // btnGetAllSizes
+            // 
+            btnGetAllSizes.Location = new Point(389, 69);
+            btnGetAllSizes.Name = "btnGetAllSizes";
+            btnGetAllSizes.Size = new Size(78, 55);
+            btnGetAllSizes.TabIndex = 20;
+            btnGetAllSizes.Text = "جلب حجم المحدد فقط";
+            btnGetAllSizes.UseVisualStyleBackColor = true;
+            btnGetAllSizes.Click += btnGetAllSizes_Click;
+            // 
+            // btnGetSelectedSizes
+            // 
+            btnGetSelectedSizes.Location = new Point(465, 69);
+            btnGetSelectedSizes.Name = "btnGetSelectedSizes";
+            btnGetSelectedSizes.Size = new Size(88, 55);
+            btnGetSelectedSizes.TabIndex = 19;
+            btnGetSelectedSizes.Text = "الحصول على الحجم";
+            btnGetSelectedSizes.UseVisualStyleBackColor = true;
+            btnGetSelectedSizes.Click += btnGetSelectedSizes_Click;
+            // 
+            // btnDeselectAll
+            // 
+            btnDeselectAll.Location = new Point(532, 155);
+            btnDeselectAll.Name = "btnDeselectAll";
+            btnDeselectAll.Size = new Size(140, 30);
+            btnDeselectAll.TabIndex = 18;
+            btnDeselectAll.Text = "الغاء تحديد الكل";
+            btnDeselectAll.UseVisualStyleBackColor = true;
+            btnDeselectAll.Click += btnDeselectAll_Click;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(684, 481);
-            Controls.Add(progressBar1);
-            Controls.Add(txtLog);
-            Controls.Add(lblLog);
-            Controls.Add(lblAuthStatus);
-            Controls.Add(lblAuthCaption);
-            Controls.Add(lblCurrent);
-            Controls.Add(lblCurrentCaption);
-            Controls.Add(btnResumeFailed);
-            Controls.Add(btnDownloadPlaylist);
-            Controls.Add(btnDownloadVideo);
-            Controls.Add(chkSubtitles);
-            Controls.Add(comboQuality);
-            Controls.Add(lblQuality);
-            Controls.Add(btnBrowseOutput);
-            Controls.Add(txtOutputPath);
-            Controls.Add(lblOutputPath);
-            Controls.Add(txtUrl);
-            Controls.Add(lblUrl);
+            Controls.Add(tableLayoutPanel1);
             MinimumSize = new Size(700, 520);
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "YouTube Download Manager";
+            ((System.ComponentModel.ISupportInitialize)dgvItems).EndInit();
+            tableLayoutPanel1.ResumeLayout(false);
+            tableLayoutPanel1.PerformLayout();
+            groupBox1.ResumeLayout(false);
+            groupBox1.PerformLayout();
             ResumeLayout(false);
-            PerformLayout();
+            // 
+
+
 
         }
 
@@ -268,6 +392,19 @@
             private System.Windows.Forms.Label lblLog;
             private System.Windows.Forms.TextBox txtLog;
         private ProgressBar progressBar1;
+        private DataGridView dgvItems;
+        private TableLayoutPanel tableLayoutPanel1;
+        private GroupBox groupBox1;
+        private DataGridViewTextBoxColumn colTitle;
+        private DataGridViewTextBoxColumn colSize;
+        private DataGridViewTextBoxColumn colTime;
+        private DataGridViewCheckBoxColumn colDownload;
+        private DataGridViewCheckBoxColumn colResume;
+        private DataGridViewButtonColumn colPause;
+        private DataGridViewTextBoxColumn colProgress;
+        private Button btnDeselectAll;
+        private Button btnGetAllSizes;
+        private Button btnGetSelectedSizes;
     }
     }
 

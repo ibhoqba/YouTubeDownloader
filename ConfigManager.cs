@@ -9,14 +9,18 @@ public class ConfigManager
     {
         private readonly string _configPath;
         public AppConfig Config { get; private set; }
-
+        public string GetLastDownloadUrl() => Config.LastDownloadUrl;
         public ConfigManager(string fileName = "config.json")
         {
             var baseDir = AppDomain.CurrentDomain.BaseDirectory;
             _configPath = Path.Combine(baseDir, fileName);
             Config = LoadConfig();
         }
-
+        public void SetLastDownloadUrl(string url)
+        {
+            Config.LastDownloadUrl = url;
+            Save();
+        }
         private AppConfig LoadConfig()
         {
             try

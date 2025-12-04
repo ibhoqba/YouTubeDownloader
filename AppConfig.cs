@@ -27,6 +27,7 @@ namespace YouTubeDownloader
 
         [JsonPropertyName("window_geometry")]
         public string WindowGeometry { get; set; } = "700x600";
+        public string LastDownloadUrl { get; set; } = "";
     }
     public class DownloadState
     {

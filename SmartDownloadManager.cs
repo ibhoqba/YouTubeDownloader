@@ -9,7 +9,7 @@ public class SmartDownloadManager
     {
         private readonly string _statePath;
         private readonly Dictionary<string, DownloadState> _state;
-
+        //
         public IReadOnlyDictionary<string, DownloadState> DownloadState => _state;
 
         public SmartDownloadManager(string stateFile = "download_state.json")
@@ -49,6 +49,7 @@ public class SmartDownloadManager
                 return new Dictionary<string, DownloadState>();
             }
         }
+       
 
         private void SaveState(Dictionary<string, DownloadState>? dict = null)
         {
